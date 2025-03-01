@@ -17,6 +17,7 @@ import { AppRoutes } from "../app/config/routes/AppRoutes";
 import { fetchAllRecipes } from "../api/receipeApi";
 
 import { filterRecipes } from "../helpers/filterRecipes";
+import useDebounce from "../hooks/useDebounce";
 import useLocalStorage from "../hooks/useLocalStorage";
 import usePagination from "../hooks/usePagination";
 import { ErrorHandler } from "./ErrorHandler/ErrorHandler";
@@ -45,13 +46,25 @@ export default function RecipeList() {
     queryFn: fetchAllRecipes,
   });
 
-  const filteredRecipes = filterRecipes(recipes, searchTerm, selectedCategory);
+  const debouncedSearchTerm = useDebounce(searchTerm);
 
-  const { currentPage, totalPages, startIndex, endIndex, handlePageChange } =
-    usePagination({
-      totalItems: filteredRecipes.length,
-      itemsPerPage,
-    });
+  const filteredRecipes = filterRecipes(
+    recipes,
+    debouncedSearchTerm,
+    selectedCategory
+  );
+
+  const {
+    currentPage,
+    totalPages,
+    startIndex,
+    endIndex,
+    handlePageChange,
+    resetPagination,
+  } = usePagination({
+    totalItems: filteredRecipes.length,
+    itemsPerPage,
+  });
 
   const navigate = useNavigate();
 
@@ -63,13 +76,11 @@ export default function RecipeList() {
 
   const handleAction = (id: string, action: ActionType) => {
     let newFavoriteIds = [...favoriteRecipes];
-
     if (action === ActionType.ADD && !newFavoriteIds.includes(id)) {
       newFavoriteIds.push(id);
     } else {
       newFavoriteIds = newFavoriteIds.filter((favId) => favId !== id);
     }
-
     setFavoriteRecipes(newFavoriteIds);
   };
 
@@ -108,7 +119,7 @@ export default function RecipeList() {
             label="Category"
             onChange={(e) => {
               setSelectedCategory(e.target.value as string);
-              handlePageChange(1);
+              resetPagination();
             }}
           >
             {categories.map((category) => (
@@ -141,7 +152,7 @@ export default function RecipeList() {
                 origin={recipe.strArea}
                 onAction={(action) => handleAction(recipe.idMeal, action)}
                 actionType={
-                  favoriteRecipes.includes(recipe.idMeal)
+                  favoriteRecipes?.includes(recipe.idMeal)
                     ? ActionType.REMOVE
                     : ActionType.ADD
                 }

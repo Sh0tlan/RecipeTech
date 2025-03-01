@@ -3,7 +3,7 @@ import { Box, Pagination, PaginationItem } from "@mui/material";
 interface Props {
   totalPages: number;
   currentPage: number;
-  handlePageChange: (value: number) => void;
+  handlePageChange: (event: React.ChangeEvent<unknown>, page: number) => void;
 }
 
 export default function CustomPagination({
@@ -25,7 +25,7 @@ export default function CustomPagination({
       <Pagination
         count={totalPages}
         page={currentPage}
-        onChange={(_, page) => handlePageChange(page)}
+        onChange={handlePageChange}
         variant="outlined"
         shape="rounded"
         color="primary"
