@@ -8,21 +8,19 @@ import {
   Typography,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 
 import { fetchRecipeById } from "../api/receipeApi";
 import Loader from "../components/Loader/Loader";
 import RecipeCard from "../components/RecipeCard";
 import { ActionType, BaseRecipe, Recipe } from "../components/types";
 import { getAllIngredients } from "../helpers/getAllIngredients";
+import useLocalStorage from "../hooks/useLocalStorage";
 
 export default function FavoriteRecipesPage() {
-  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("favoriteRecipes");
-    setFavoriteIds(saved ? JSON.parse(saved) : []);
-  }, []);
+  const [favoriteIds, setFavoriteIds] = useLocalStorage<string[]>(
+    "favoriteRecipes",
+    []
+  );
 
   const { data: favoriteRecipes = [], isLoading } = useQuery({
     queryKey: ["favoriteRecipes", favoriteIds],
@@ -39,7 +37,6 @@ export default function FavoriteRecipesPage() {
     if (action === ActionType.REMOVE) {
       const updatedFavorites = favoriteIds.filter((favId) => favId !== id);
       setFavoriteIds(updatedFavorites);
-      localStorage.setItem("favoriteRecipes", JSON.stringify(updatedFavorites));
     }
   };
 

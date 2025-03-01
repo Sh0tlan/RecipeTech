@@ -8,7 +8,6 @@ import {
   MenuItem,
   Select,
   TextField,
-  Typography,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -16,7 +15,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { AppRoutes } from "../app/config/routes/AppRoutes";
 
 import { fetchAllRecipes } from "../api/receipeApi";
-import useDebounce from "../hooks/useDebounce";
+
+import { filterRecipes } from "../helpers/filterRecipes";
+import useLocalStorage from "../hooks/useLocalStorage";
+import usePagination from "../hooks/usePagination";
+import { ErrorHandler } from "./ErrorHandler/ErrorHandler";
 import Loader from "./Loader/Loader";
 import CustomPagination from "./Navigation/CustomPagination";
 import RecipeCard from "./RecipeCard";
@@ -25,48 +28,49 @@ import { ActionType, BaseRecipe, Recipe } from "./types";
 const itemsPerPage = 9;
 
 export default function RecipeList() {
-  const [favoriteRecipes, setFavoriteRecipes] = useState<string[]>(() => {
-    const saved = localStorage.getItem("favoriteRecipes");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [favoriteRecipes, setFavoriteRecipes] = useLocalStorage<string[]>(
+    "favoriteRecipes",
+    []
+  );
 
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [currentPage, setCurrentPage] = useState<number>(1);
-
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
-  const navigate = useNavigate();
 
   const {
     data: recipes = [],
-    isLoading,
-    error,
+    isLoading: recipesLoading,
+    error: recipesError,
   } = useQuery({
     queryKey: ["recipes"],
     queryFn: fetchAllRecipes,
   });
 
-  if (isLoading) return <Loader />;
+  const filteredRecipes = filterRecipes(recipes, searchTerm, selectedCategory);
 
-  if (error)
-    return (
-      <Typography variant="h6" align="center" color="error">
-        Failed to load recipes.
-      </Typography>
-    );
+  const { currentPage, totalPages, startIndex, endIndex, handlePageChange } =
+    usePagination({
+      totalItems: filteredRecipes.length,
+      itemsPerPage,
+    });
+
+  const navigate = useNavigate();
+
+  if (recipesLoading) return <Loader />;
+
+  if (recipesError) {
+    return <ErrorHandler message="Failed to load recipes." />;
+  }
 
   const handleAction = (id: string, action: ActionType) => {
-    const saved = localStorage.getItem("favoriteRecipes");
-    let favoriteIds: string[] = saved ? JSON.parse(saved) : [];
+    let newFavoriteIds = [...favoriteRecipes];
 
-    if (action === ActionType.ADD && !favoriteIds.includes(id)) {
-      favoriteIds.push(id);
+    if (action === ActionType.ADD && !newFavoriteIds.includes(id)) {
+      newFavoriteIds.push(id);
     } else {
-      favoriteIds = favoriteIds.filter((favId) => favId !== id);
+      newFavoriteIds = newFavoriteIds.filter((favId) => favId !== id);
     }
 
-    localStorage.setItem("favoriteRecipes", JSON.stringify(favoriteIds));
-    setFavoriteRecipes(favoriteIds);
+    setFavoriteRecipes(newFavoriteIds);
   };
 
   const categories = [
@@ -74,26 +78,7 @@ export default function RecipeList() {
     ...new Set(recipes.map((recipe: BaseRecipe) => recipe.strCategory)),
   ];
 
-  const filteredRecipes = recipes.filter((recipe: Recipe) => {
-    const matchesSearch = recipe.strMeal
-      .toLowerCase()
-      .includes(debouncedSearchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "All" || recipe.strCategory === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const totalPages = Math.ceil(filteredRecipes.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
   const paginatedRecipes = filteredRecipes.slice(startIndex, endIndex);
-
-  const handlePageChange = (
-    _event: React.ChangeEvent<unknown>,
-    value: number
-  ) => {
-    setCurrentPage(value);
-  };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4, minHeight: "100vh" }}>
@@ -123,7 +108,7 @@ export default function RecipeList() {
             label="Category"
             onChange={(e) => {
               setSelectedCategory(e.target.value as string);
-              setCurrentPage(1);
+              handlePageChange(1);
             }}
           >
             {categories.map((category) => (
