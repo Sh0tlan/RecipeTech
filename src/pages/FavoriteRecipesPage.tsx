@@ -10,12 +10,11 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-import { fetchRecipeById } from "../components/api/receipeApi";
-
-import { getAllIngredients } from "../components/helpers/getAllIngredients";
+import { fetchRecipeById } from "../api/receipeApi";
+import Loader from "../components/Loader/Loader";
 import RecipeCard from "../components/RecipeCard";
 import { ActionType, BaseRecipe, Recipe } from "../components/types";
-import Loader from "../Loader";
+import { getAllIngredients } from "../helpers/getAllIngredients";
 
 export default function FavoriteRecipesPage() {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);

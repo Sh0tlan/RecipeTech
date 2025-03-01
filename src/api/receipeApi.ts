@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Recipe } from "../types";
+import { Recipe } from "../components/types";
 
 export const fetchAllRecipes = async (): Promise<Recipe[]> => {
   const alphabet = "abcdefghijklmnopqrstuvwxyz".split("");

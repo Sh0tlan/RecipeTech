@@ -10,8 +10,9 @@ import {
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { fetchRecipeById } from "../components/api/receipeApi";
+
 import { Recipe } from "./types";
+import { fetchRecipeById } from "../api/receipeApi";
 
 export default function RecipeDetail() {
   const { id } = useParams<{ id: string }>();

@@ -14,9 +14,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AppRoutes } from "../app/config/routes/AppRoutes";
-import Loader from "../Loader";
-import { fetchAllRecipes } from "./api/receipeApi";
-import useDebounce from "./hooks/useDebounce";
+
+import { fetchAllRecipes } from "../api/receipeApi";
+import useDebounce from "../hooks/useDebounce";
+import Loader from "./Loader/Loader";
 import CustomPagination from "./Navigation/CustomPagination";
 import RecipeCard from "./RecipeCard";
 import { ActionType, BaseRecipe, Recipe } from "./types";
