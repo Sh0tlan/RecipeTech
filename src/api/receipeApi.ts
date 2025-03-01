@@ -22,3 +22,12 @@ export const fetchRecipeById = async (id: string): Promise<Recipe> => {
   );
   return response.data.meals ? response.data.meals[0] : null;
 };
+
+export const fetchCategories = async (): Promise<string[]> => {
+  const response = await axios.get(
+    "https://www.themealdb.com/api/json/v1/1/categories.php"
+  );
+  return response.data.categories.map(
+    (category: { strCategory: string }) => category.strCategory
+  );
+};

@@ -9,14 +9,11 @@ import {
   Select,
   TextField,
 } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AppRoutes } from "../app/config/routes/AppRoutes";
-
-import { fetchAllRecipes } from "../api/receipeApi";
-
 import { filterRecipes } from "../helpers/filterRecipes";
+import { useCategories, useRecipes } from "../hooks/recipesQueries";
 import useDebounce from "../hooks/useDebounce";
 import useLocalStorage from "../hooks/useLocalStorage";
 import usePagination from "../hooks/usePagination";
@@ -24,7 +21,7 @@ import { ErrorHandler } from "./ErrorHandler/ErrorHandler";
 import Loader from "./Loader/Loader";
 import CustomPagination from "./Navigation/CustomPagination";
 import RecipeCard from "./RecipeCard";
-import { ActionType, BaseRecipe, Recipe } from "./types";
+import { ActionType, Recipe } from "./types";
 
 const itemsPerPage = 9;
 
@@ -36,17 +33,20 @@ export default function RecipeList() {
 
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const navigate = useNavigate();
+  const debouncedSearchTerm = useDebounce(searchTerm);
 
   const {
     data: recipes = [],
     isLoading: recipesLoading,
     error: recipesError,
-  } = useQuery({
-    queryKey: ["recipes"],
-    queryFn: fetchAllRecipes,
-  });
+  } = useRecipes();
 
-  const debouncedSearchTerm = useDebounce(searchTerm);
+  const {
+    data: categoriesData = [],
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useCategories();
 
   const filteredRecipes = filterRecipes(
     recipes,
@@ -66,12 +66,14 @@ export default function RecipeList() {
     itemsPerPage,
   });
 
-  const navigate = useNavigate();
-
-  if (recipesLoading) return <Loader />;
+  if (recipesLoading || categoriesLoading) return <Loader />;
 
   if (recipesError) {
     return <ErrorHandler message="Failed to load recipes." />;
+  }
+
+  if (categoriesError) {
+    return <ErrorHandler message="Failed to load categories." />;
   }
 
   const handleAction = (id: string, action: ActionType) => {
@@ -84,10 +86,7 @@ export default function RecipeList() {
     setFavoriteRecipes(newFavoriteIds);
   };
 
-  const categories = [
-    "All",
-    ...new Set(recipes.map((recipe: BaseRecipe) => recipe.strCategory)),
-  ];
+  const categories = ["All", ...categoriesData];
 
   const paginatedRecipes = filteredRecipes.slice(startIndex, endIndex);
 

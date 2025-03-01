@@ -7,13 +7,12 @@ import {
   ListItemText,
   Typography,
 } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
 
-import { fetchRecipeById } from "../api/receipeApi";
 import Loader from "../components/Loader/Loader";
 import RecipeCard from "../components/RecipeCard";
 import { ActionType, BaseRecipe, Recipe } from "../components/types";
 import { getAllIngredients } from "../helpers/getAllIngredients";
+import { useFavoriteRecipes } from "../hooks/recipesQueries";
 import useLocalStorage from "../hooks/useLocalStorage";
 
 export default function FavoriteRecipesPage() {
@@ -22,16 +21,8 @@ export default function FavoriteRecipesPage() {
     []
   );
 
-  const { data: favoriteRecipes = [], isLoading } = useQuery({
-    queryKey: ["favoriteRecipes", favoriteIds],
-    queryFn: async () => {
-      const recipes = await Promise.all(
-        favoriteIds.map((id) => fetchRecipeById(id))
-      );
-      return recipes;
-    },
-    enabled: favoriteIds.length > 0,
-  });
+  const { data: favoriteRecipes = [], isLoading } =
+    useFavoriteRecipes(favoriteIds);
 
   const handleAction = (id: string, action: ActionType) => {
     if (action === ActionType.REMOVE) {
