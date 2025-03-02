@@ -1,14 +1,18 @@
-import { useState } from "react";
-
 interface Props {
   totalItems: number;
   itemsPerPage: number;
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
 }
 
 const INITIAL_PAGE = 1;
 
-export default function usePagination({ totalItems, itemsPerPage }: Props) {
-  const [currentPage, setCurrentPage] = useState<number>(INITIAL_PAGE);
+export default function usePagination({
+  totalItems,
+  itemsPerPage,
+  currentPage,
+  setCurrentPage,
+}: Props) {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   const startIndex = (currentPage - 1) * itemsPerPage;

@@ -9,12 +9,11 @@ import {
   Select,
   TextField,
 } from "@mui/material";
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AppRoutes } from "../app/config/routes/AppRoutes";
 import { filterRecipes } from "../helpers/filterRecipes";
 import { useCategories, useRecipes } from "../hooks/recipesQueries";
-import useDebounce from "../hooks/useDebounce";
 import useLocalStorage from "../hooks/useLocalStorage";
 import usePagination from "../hooks/usePagination";
 import { ErrorHandler } from "./ErrorHandler/ErrorHandler";
@@ -31,10 +30,18 @@ export default function RecipeList() {
     []
   );
 
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const debouncedSearchTerm = useDebounce(searchTerm);
+
+  const [searchTerm, setSearchTerm] = useState<string>(
+    searchParams.get("search") || ""
+  );
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    searchParams.get("category") || "All"
+  );
+  const [currentPage, setCurrentPage] = useState<number>(
+    parseInt(searchParams.get("page") || "1", 10)
+  );
 
   const {
     data: recipes = [],
@@ -48,14 +55,9 @@ export default function RecipeList() {
     error: categoriesError,
   } = useCategories();
 
-  const filteredRecipes = filterRecipes(
-    recipes,
-    debouncedSearchTerm,
-    selectedCategory
-  );
+  const filteredRecipes = filterRecipes(recipes, searchTerm, selectedCategory);
 
   const {
-    currentPage,
     totalPages,
     startIndex,
     endIndex,
@@ -63,18 +65,24 @@ export default function RecipeList() {
     resetPagination,
   } = usePagination({
     totalItems: filteredRecipes.length,
-    itemsPerPage,
+    itemsPerPage: itemsPerPage,
+    currentPage,
+    setCurrentPage,
   });
 
+  useEffect(() => {
+    const newSearchParams = new URLSearchParams();
+    if (searchTerm) newSearchParams.set("search", searchTerm);
+    if (selectedCategory !== "All")
+      newSearchParams.set("category", selectedCategory);
+    if (currentPage !== 1) newSearchParams.set("page", currentPage.toString());
+    setSearchParams(newSearchParams, { replace: true });
+  }, [searchTerm, selectedCategory, currentPage, setSearchParams]);
+
   if (recipesLoading || categoriesLoading) return <Loader />;
-
-  if (recipesError) {
-    return <ErrorHandler message="Failed to load recipes." />;
-  }
-
-  if (categoriesError) {
+  if (recipesError) return <ErrorHandler message="Failed to load recipes." />;
+  if (categoriesError)
     return <ErrorHandler message="Failed to load categories." />;
-  }
 
   const handleAction = (id: string, action: ActionType) => {
     let newFavoriteIds = [...favoriteRecipes];
@@ -87,7 +95,6 @@ export default function RecipeList() {
   };
 
   const categories = ["All", ...categoriesData];
-
   const paginatedRecipes = filteredRecipes.slice(startIndex, endIndex);
 
   return (
