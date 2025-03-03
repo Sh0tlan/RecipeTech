@@ -14,6 +14,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AppRoutes } from "../app/config/routes/AppRoutes";
 import { filterRecipes } from "../helpers/filterRecipes";
 import { useCategories, useRecipes } from "../hooks/recipesQueries";
+import useDebounce from "../hooks/useDebounce";
 import useLocalStorage from "../hooks/useLocalStorage";
 import usePagination from "../hooks/usePagination";
 import { ErrorHandler } from "./ErrorHandler/ErrorHandler";
@@ -43,6 +44,8 @@ export default function RecipeList() {
     parseInt(searchParams.get("page") || "1", 10)
   );
 
+  const debouncedSearchTerm = useDebounce(searchTerm);
+
   const {
     data: recipes = [],
     isLoading: recipesLoading,
@@ -55,7 +58,11 @@ export default function RecipeList() {
     error: categoriesError,
   } = useCategories();
 
-  const filteredRecipes = filterRecipes(recipes, searchTerm, selectedCategory);
+  const filteredRecipes = filterRecipes(
+    recipes,
+    debouncedSearchTerm,
+    selectedCategory
+  );
 
   const {
     totalPages,
